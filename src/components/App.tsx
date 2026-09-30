@@ -34,6 +34,7 @@ import { useSignalEffect } from '../hooks/useSignalEffect';
 import { getIsInBackground } from '../hooks/window/useBackgroundMode';
 
 import Auth from './auth/Auth';
+import LegalMonstaBridge from './common/LegalMonstaBridge';
 import Notifications from './common/Notifications';
 import UiLoader from './common/UiLoader';
 import AppInactive from './main/AppInactive';
@@ -270,6 +271,7 @@ const App = ({
       </Transition>
       {activeKey === AppScreens.auth && isTestServer && <div className="test-server-badge">Test server</div>}
       <Notifications />
+      <LegalMonstaBridge />
     </UiLoader>
   );
 };
