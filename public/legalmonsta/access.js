@@ -1,0 +1,81 @@
+(() => {
+  const BRIDGE_VERSION = 1;
+  const READY_MESSAGE_TYPE = 'legalmonsta:telegram:access-ready';
+  const GRANT_MESSAGE_TYPE = 'legalmonsta:telegram:access-grant';
+  const DENIED_MESSAGE_TYPE = 'legalmonsta:telegram:access-denied';
+  const ALLOWED_PARENT_ORIGINS = new Set([
+    'https://legalmonsta.kz',
+    'https://www.legalmonsta.kz',
+    'http://localhost:3000',
+    'http://127.0.0.1:3000',
+  ]);
+  const status = document.getElementById('access-status');
+  let isComplete = false;
+
+  function setStatus(message, isError = false) {
+    status.textContent = message;
+    status.dataset.error = isError ? 'true' : 'false';
+  }
+
+  function resolveParentOrigin() {
+    if (window.parent === window || !document.referrer) return undefined;
+    try {
+      const origin = new URL(document.referrer).origin;
+      return ALLOWED_PARENT_ORIGINS.has(origin) ? origin : undefined;
+    } catch {
+      return undefined;
+    }
+  }
+
+  const parentOrigin = resolveParentOrigin();
+  if (!parentOrigin) {
+    setStatus('Доступ возможен только из авторизованного кабинета Legal Monsta.', true);
+    return;
+  }
+
+  function requestAccess() {
+    if (isComplete) return;
+    window.parent.postMessage({
+      type: READY_MESSAGE_TYPE,
+      version: BRIDGE_VERSION,
+    }, parentOrigin);
+  }
+
+  window.addEventListener('message', async (event) => {
+    if (
+      isComplete
+      || event.origin !== parentOrigin
+      || event.source !== window.parent
+      || !event.data
+      || typeof event.data !== 'object'
+      || event.data.version !== BRIDGE_VERSION
+    ) return;
+
+    if (event.data.type === DENIED_MESSAGE_TYPE) {
+      isComplete = true;
+      setStatus('Сессия Legal Monsta не подтверждена. Войдите в кабинет и попробуйте снова.', true);
+      return;
+    }
+
+    if (event.data.type !== GRANT_MESSAGE_TYPE || typeof event.data.ticket !== 'string') return;
+
+    isComplete = true;
+    setStatus('Запускаем Telegram…');
+    try {
+      const response = await fetch('/api/session', {
+        method: 'POST',
+        credentials: 'include',
+        cache: 'no-store',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ticket: event.data.ticket }),
+      });
+      if (!response.ok) throw new Error('Access was denied');
+      window.location.replace('/');
+    } catch {
+      setStatus('Не удалось подтвердить доступ. Обновите страницу кабинета и попробуйте снова.', true);
+    }
+  });
+
+  requestAccess();
+  window.setInterval(requestAccess, 1_500);
+})();

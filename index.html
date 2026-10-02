@@ -10,7 +10,8 @@
 
   <meta name="title" content="%TG_APP_TITLE%">
   <meta name="description"
-    content="Telegram is a cloud-based mobile and desktop messaging app with a focus on security and speed.">
+    content="Embedded open-source Telegram client available only inside the authenticated Legal Monsta workspace.">
+  <meta name="robots" content="noindex, nofollow, noarchive">
   <meta name="viewport"
         content="width=device-width, initial-scale=1, maximum-scale=1.0, user-scalable=no, shrink-to-fit=no, viewport-fit=cover">
   <meta name="mobile-web-app-capable" content="yes">
@@ -25,23 +26,6 @@
 
   <meta http-equiv="Content-Security-Policy" content="%TG_CSP%">
 
-  <!-- Open Graph / Facebook -->
-  <meta property="og:type" content="website">
-  <meta property="og:url" content="%TG_PUBLIC_URL%">
-  <meta property="og:title" content="%TG_APP_TITLE%">
-  <meta property="og:description"
-        content="Telegram is a cloud-based mobile and desktop messaging app with a focus on security and speed.">
-  <meta property="og:image" content="./%TG_MAIN_ICON%.png">
-
-  <!-- Twitter -->
-  <meta property="twitter:card" content="summary_large_image">
-  <meta property="twitter:url" content="%TG_PUBLIC_URL%">
-  <meta property="twitter:title" content="%TG_APP_TITLE%">
-  <meta property="twitter:description"
-    content="Telegram is a cloud-based mobile and desktop messaging app with a focus on security and speed.">
-  <meta property="twitter:image" content="./%TG_MAIN_ICON%.png">
-
-  <link rel="canonical" href="%TG_PUBLIC_URL%">
   <link rel="apple-touch-icon" sizes="180x180" href="./%TG_APPLE_ICON%.png">
   <link rel="icon" href="./favicon.svg" type="image/svg+xml">
   <link rel="icon" type="image/png" sizes="16x16" href="./favicon-16x16.png">
@@ -61,13 +45,12 @@
 
 <body id="root">
   <noscript>
-    <video src="./nojs.mp4" class="nojs-video" muted loop autoplay playsinline disablePictureInPicture></video>
-    <h1>Telegram Web</h1>
-    <p>Please, enable JavaScript to open the app.</p>
+    <h1>Telegram в Legal Monsta</h1>
+    <p>Встроенный клиент доступен только из авторизованного кабинета Legal Monsta с включённым JavaScript.</p>
   </noscript>
   <div id="portals"></div>
   <script vite-ignore src="./compatTest.js"></script>
-  <script type="module" src="./src/index.tsx"></script>
+  <script type="module" src="./src/embeddedEntry.ts"></script>
 </body>
 
 </html>

@@ -1,0 +1,102 @@
+:root {
+  font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  color: #172033;
+  color-scheme: light;
+  background: #f4f7fb;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  display: grid;
+  place-items: center;
+
+  min-height: 100vh;
+  margin: 0;
+  padding: 1.5rem;
+
+  background:
+    radial-gradient(circle at top left, rgba(38, 166, 229, 0.13), transparent 36rem),
+    #f4f7fb;
+}
+
+.access-card {
+  width: min(100%, 34rem);
+  padding: 2rem;
+  border: 0.0625rem solid rgba(23, 32, 51, 0.08);
+  border-radius: 1.25rem;
+
+  text-align: center;
+
+  background: rgba(255, 255, 255, 0.96);
+  box-shadow: 0 1.25rem 4rem rgba(23, 32, 51, 0.12);
+}
+
+.access-logo {
+  display: block;
+  margin: 0 auto 1rem;
+}
+
+.access-eyebrow {
+  margin: 0 0 0.625rem;
+
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: #168acd;
+  letter-spacing: 0.12em;
+}
+
+.access-title {
+  margin: 0;
+  font-size: clamp(1.5rem, 4vw, 2rem);
+  line-height: 1.2;
+}
+
+.access-copy,
+.access-note {
+  line-height: 1.6;
+  color: #5a6477;
+}
+
+.access-copy {
+  margin: 1rem 0;
+}
+
+.access-status {
+  min-height: 1.5rem;
+  margin: 1.25rem 0;
+  font-weight: 600;
+  color: #168acd;
+}
+
+.access-status[data-error="true"] {
+  color: #a33a3a;
+}
+
+.access-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  min-height: 2.75rem;
+  padding: 0.625rem 1.25rem;
+  border-radius: 999rem;
+
+  font-weight: 650;
+  color: #ffffff;
+  text-decoration: none;
+
+  background: #168acd;
+}
+
+.access-link:focus-visible {
+  outline: 0.1875rem solid rgba(22, 138, 205, 0.35);
+  outline-offset: 0.1875rem;
+}
+
+.access-note {
+  margin: 1.25rem 0 0;
+  font-size: 0.8125rem;
+}
