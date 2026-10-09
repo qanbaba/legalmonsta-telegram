@@ -1,6 +1,6 @@
 import { DEBUG } from '../config';
 import { pause } from '../util/schedulers';
-import { clearAssetCache, respondWithCache, respondWithCacheNetworkFirst } from './assetCache';
+import { clearStaleAssetCaches, respondWithCache, respondWithCacheNetworkFirst } from './assetCache';
 import { respondForDownload } from './download';
 import { respondForProgressive } from './progressive';
 import {
@@ -41,7 +41,7 @@ self.addEventListener('activate', (e) => {
       // An attempt to fix freezing UI on iOS
       pause(ACTIVATE_TIMEOUT),
       Promise.all([
-        clearAssetCache(),
+        clearStaleAssetCaches(),
         // Become available to all pages
         self.clients.claim(),
       ]),

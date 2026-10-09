@@ -1,4 +1,4 @@
-import { ASSET_CACHE_NAME } from '../config';
+import { ASSET_CACHE_NAME, ASSET_CACHE_PREFIX } from '../config';
 import { pause } from '../util/schedulers';
 
 declare const self: ServiceWorkerGlobalScope;
@@ -38,8 +38,13 @@ export function respondWithCache(e: FetchEvent) {
   return responsePromise.then(({ response }) => response);
 }
 
-export function clearAssetCache() {
-  return self.caches.delete(ASSET_CACHE_NAME);
+export async function clearStaleAssetCaches() {
+  const cacheNames = await self.caches.keys();
+  const staleCacheNames = cacheNames.filter((cacheName) => (
+    cacheName.startsWith(ASSET_CACHE_PREFIX) && cacheName !== ASSET_CACHE_NAME
+  ));
+
+  await Promise.all(staleCacheNames.map((cacheName) => self.caches.delete(cacheName)));
 }
 
 interface AssetResponse {
