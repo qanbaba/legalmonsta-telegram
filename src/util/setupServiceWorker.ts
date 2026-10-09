@@ -1,6 +1,8 @@
 import { getActions } from '../global';
 
-import { DEBUG, DEBUG_MORE, IS_TEST } from '../config';
+import {
+  ASSET_CACHE_NAME, DEBUG, DEBUG_MORE, IS_TEST,
+} from '../config';
 // eslint-disable-next-line import-x/default
 import serviceWorkerUrl from '../serviceWorker/service.worker.ts?worker&url';
 import { IS_ANDROID, IS_IOS, IS_SERVICE_WORKER_SUPPORTED } from './browser/windowEnvironment';
@@ -17,6 +19,35 @@ const IGNORE_WORKER_PATH = '/k/';
 const SERVICE_WORKER_OPTIONS: RegistrationOptions = import.meta.env.DEV
   ? { scope: './', type: 'module' }
   : { type: 'module' };
+
+export async function reloadWithFreshServiceWorker() {
+  // The worker URL is content-hashed, so the current worker cannot discover its successor.
+  // The next navigation loads a fresh app shell, whose bundle registers the new worker URL.
+  await Promise.allSettled([
+    clearAssetCache(),
+    unregisterAppServiceWorkers(),
+  ]);
+
+  window.location.reload();
+}
+
+async function clearAssetCache() {
+  if (!('caches' in window)) return;
+
+  await caches.delete(ASSET_CACHE_NAME);
+}
+
+async function unregisterAppServiceWorkers() {
+  if (!IS_SERVICE_WORKER_SUPPORTED) return;
+
+  const registrations = await fetchAppServiceWorkerRegistrations();
+  await Promise.all(registrations.map((registration) => registration.unregister()));
+}
+
+async function fetchAppServiceWorkerRegistrations() {
+  const registrations = await navigator.serviceWorker.getRegistrations();
+  return registrations.filter((registration) => !registration.scope.includes(IGNORE_WORKER_PATH));
+}
 
 function handleWorkerMessage(e: MessageEvent) {
   const action: WorkerAction = e.data;
@@ -55,8 +86,7 @@ if (IS_SERVICE_WORKER_SUPPORTED) {
     try {
       const controller = navigator.serviceWorker.controller;
       if (!controller || controller.scriptURL.includes(IGNORE_WORKER_PATH)) {
-        const registrations = await navigator.serviceWorker.getRegistrations();
-        const ourRegistrations = registrations.filter((r) => !r.scope.includes(IGNORE_WORKER_PATH));
+        const ourRegistrations = await fetchAppServiceWorkerRegistrations();
         if (ourRegistrations.length) {
           if (DEBUG) {
             // eslint-disable-next-line no-console

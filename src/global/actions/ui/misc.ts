@@ -749,15 +749,16 @@ addActionHandler('checkAppVersion', (global): ActionReturnType => {
     .then((response) => response.text())
     .then((version) => {
       version = version.trim();
+      const isAppUpdateAvailable = getIsAppUpdateNeeded(version, APP_VERSION);
 
-      if (getIsAppUpdateNeeded(version, APP_VERSION)) {
-        global = getGlobal();
-        global = {
-          ...global,
-          isAppUpdateAvailable: true,
-        };
-        setGlobal(global);
-      }
+      global = getGlobal();
+      if (global.isAppUpdateAvailable === isAppUpdateAvailable) return;
+
+      global = {
+        ...global,
+        isAppUpdateAvailable,
+      };
+      setGlobal(global);
     })
     .catch((err) => {
       if (DEBUG) {
