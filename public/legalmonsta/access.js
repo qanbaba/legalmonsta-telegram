@@ -20,13 +20,21 @@
   }
 
   function resolveParentOrigin() {
-    if (window.parent === window || !document.referrer) return undefined;
-    try {
-      const origin = new URL(document.referrer).origin;
-      return ALLOWED_PARENT_ORIGINS.has(origin) ? origin : undefined;
-    } catch {
-      return undefined;
+    if (window.parent === window) return undefined;
+
+    const candidateOrigins = [];
+    if (document.referrer) {
+      try {
+        candidateOrigins.push(new URL(document.referrer).origin);
+      } catch {
+        // Ignore malformed referrers and use the browser-provided ancestor origin.
+      }
     }
+
+    const ancestorOrigin = window.location.ancestorOrigins?.[0];
+    if (ancestorOrigin) candidateOrigins.push(ancestorOrigin);
+
+    return candidateOrigins.find((origin) => ALLOWED_PARENT_ORIGINS.has(origin));
   }
 
   const parentOrigin = resolveParentOrigin();
