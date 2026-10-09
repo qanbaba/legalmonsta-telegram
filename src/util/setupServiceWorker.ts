@@ -1,7 +1,7 @@
 import { getActions } from '../global';
 
 import {
-  ASSET_CACHE_NAME, DEBUG, DEBUG_MORE, IS_TEST,
+  ASSET_CACHE_PREFIX, DEBUG, DEBUG_MORE, IS_TEST,
 } from '../config';
 // eslint-disable-next-line import-x/default
 import serviceWorkerUrl from '../serviceWorker/service.worker.ts?worker&url';
@@ -24,17 +24,19 @@ export async function reloadWithFreshServiceWorker() {
   // The worker URL is content-hashed, so the current worker cannot discover its successor.
   // The next navigation loads a fresh app shell, whose bundle registers the new worker URL.
   await Promise.allSettled([
-    clearAssetCache(),
+    clearAssetCaches(),
     unregisterAppServiceWorkers(),
   ]);
 
   window.location.reload();
 }
 
-async function clearAssetCache() {
+async function clearAssetCaches() {
   if (!('caches' in window)) return;
 
-  await caches.delete(ASSET_CACHE_NAME);
+  const cacheNames = await caches.keys();
+  const assetCacheNames = cacheNames.filter((cacheName) => cacheName.startsWith(ASSET_CACHE_PREFIX));
+  await Promise.all(assetCacheNames.map((cacheName) => caches.delete(cacheName)));
 }
 
 async function unregisterAppServiceWorkers() {

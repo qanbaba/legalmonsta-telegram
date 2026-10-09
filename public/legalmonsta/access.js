@@ -5,6 +5,10 @@
   const DENIED_MESSAGE_TYPE = 'legalmonsta:telegram:access-denied';
   const EMBEDDED_RELEASE_PARAM = 'lm-release';
   const EMBEDDED_RELEASE_PATTERN = /^[a-zA-Z0-9._-]{1,64}$/;
+  const VERSIONED_RELEASE_PATTERN = /^\d+\.\d+(?:\.\d+)?$/;
+  const APPLIED_RELEASE_STORAGE_KEY = 'lm-embedded-release';
+  const ASSET_CACHE_PREFIX = 'tt-assets';
+  const IGNORE_WORKER_PATH = '/k/';
   const ALLOWED_PARENT_ORIGINS = new Set([
     'https://legalmonsta.kz',
     'https://www.legalmonsta.kz',
@@ -80,6 +84,7 @@
         body: JSON.stringify({ ticket: event.data.ticket }),
       });
       if (!response.ok) throw new Error('Access was denied');
+      await prepareEmbeddedRelease();
       window.location.replace(buildClientUrl());
     } catch {
       setStatus('Не удалось подтвердить доступ. Обновите страницу кабинета и попробуйте снова.', true);
@@ -89,14 +94,57 @@
   requestAccess();
   window.setInterval(requestAccess, 1_500);
 
+  async function prepareEmbeddedRelease() {
+    const release = getEmbeddedRelease();
+    if (!release || !VERSIONED_RELEASE_PATTERN.test(release)) return;
+
+    try {
+      if (window.localStorage.getItem(APPLIED_RELEASE_STORAGE_KEY) === release) return;
+    } catch {
+      // Continue without the optimization when storage is unavailable.
+    }
+
+    try {
+      await Promise.all([
+        clearAssetCaches(),
+        unregisterAppServiceWorkers(),
+      ]);
+      window.localStorage.setItem(APPLIED_RELEASE_STORAGE_KEY, release);
+    } catch {
+      // The versioned navigation still prevents an old shell from blocking startup.
+    }
+  }
+
+  async function clearAssetCaches() {
+    if (!('caches' in window)) return;
+
+    const cacheNames = await window.caches.keys();
+    const assetCacheNames = cacheNames.filter((cacheName) => cacheName.startsWith(ASSET_CACHE_PREFIX));
+    await Promise.all(assetCacheNames.map((cacheName) => window.caches.delete(cacheName)));
+  }
+
+  async function unregisterAppServiceWorkers() {
+    if (!('serviceWorker' in navigator)) return;
+
+    const registrations = await navigator.serviceWorker.getRegistrations();
+    const appRegistrations = registrations.filter((registration) => (
+      !registration.scope.includes(IGNORE_WORKER_PATH)
+    ));
+    await Promise.all(appRegistrations.map((registration) => registration.unregister()));
+  }
+
   function buildClientUrl() {
     const url = new URL('/', window.location.origin);
-    const release = new URLSearchParams(window.location.search).get(EMBEDDED_RELEASE_PARAM);
+    const release = getEmbeddedRelease();
 
     if (release && EMBEDDED_RELEASE_PATTERN.test(release)) {
       url.searchParams.set(EMBEDDED_RELEASE_PARAM, release);
     }
 
     return `${url.pathname}${url.search}`;
+  }
+
+  function getEmbeddedRelease() {
+    return new URLSearchParams(window.location.search).get(EMBEDDED_RELEASE_PARAM);
   }
 })();

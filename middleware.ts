@@ -5,6 +5,8 @@ import {
 } from './access-session.js';
 
 const ACCESS_PAGE_PATH = '/legalmonsta/access.html';
+const EMBEDDED_RELEASE_PARAM = 'lm-release';
+const EMBEDDED_RELEASE_PATTERN = /^[a-zA-Z0-9._-]{1,64}$/;
 const PUBLIC_PATH_PREFIXES = ['/api/', '/assets/', '/legalmonsta/'];
 const PUBLIC_PATHS = new Set([
   '/favicon.ico',
@@ -51,7 +53,13 @@ function isTrustedEmbedNavigation(request: Request) {
 }
 
 function redirectToAccessPage(request: Request) {
+  const requestUrl = new URL(request.url);
   const accessUrl = new URL(ACCESS_PAGE_PATH, request.url);
+  const release = requestUrl.searchParams.get(EMBEDDED_RELEASE_PARAM);
+  if (release && EMBEDDED_RELEASE_PATTERN.test(release)) {
+    accessUrl.searchParams.set(EMBEDDED_RELEASE_PARAM, release);
+  }
+
   return Response.redirect(accessUrl, 307);
 }
 
