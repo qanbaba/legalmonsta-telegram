@@ -13,6 +13,7 @@ import { selectCommunityPanelId } from '../../../global/selectors';
 import { IS_TAURI } from '../../../util/browser/globalEnvironment';
 import { IS_TOUCH_ENV } from '../../../util/browser/windowEnvironment';
 import buildClassName from '../../../util/buildClassName';
+import { reloadWithFreshServiceWorker } from '../../../util/setupServiceWorker';
 
 import useSelector from '../../../hooks/data/useSelector';
 import useInterval from '../../../hooks/schedulers/useInterval';
@@ -75,7 +76,7 @@ const LeftMain: FC<OwnProps> = ({
   const { openLeftColumnContent } = getActions();
   const [isNewChatButtonShown, setIsNewChatButtonShown] = useState(IS_TOUCH_ENV);
   const [tauriUpdate, setTauriUpdate] = useState<Update>();
-  const [isTauriUpdateDownloading, setIsTauriUpdateDownloading] = useState(false);
+  const [isUpdateApplying, setIsUpdateApplying] = useState(false);
 
   const {
     shouldRenderForumPanel, handleForumPanelAnimationEnd,
@@ -130,19 +131,20 @@ const LeftMain: FC<OwnProps> = ({
   const handleUpdateClick = useLastCallback(async () => {
     if (tauriUpdate) {
       try {
-        setIsTauriUpdateDownloading(true);
+        setIsUpdateApplying(true);
         await tauriUpdate.downloadAndInstall();
-        setIsTauriUpdateDownloading(false);
+        setIsUpdateApplying(false);
 
         await window.tauri?.relaunch();
       } catch (e) {
         // eslint-disable-next-line no-console
         console.error('Failed to download and install Tauri update', e);
       } finally {
-        setIsTauriUpdateDownloading(false);
+        setIsUpdateApplying(false);
       }
     } else {
-      window.location.reload();
+      setIsUpdateApplying(true);
+      await reloadWithFreshServiceWorker();
     }
   });
 
@@ -249,7 +251,7 @@ const LeftMain: FC<OwnProps> = ({
           badge
           className={buildClassName('btn-update', updateButtonClassNames)}
           onClick={handleUpdateClick}
-          isLoading={isTauriUpdateDownloading}
+          isLoading={isUpdateApplying}
         >
           {lang('lng_update_telegram')}
         </Button>
