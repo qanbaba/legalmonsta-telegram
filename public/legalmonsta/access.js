@@ -3,6 +3,8 @@
   const READY_MESSAGE_TYPE = 'legalmonsta:telegram:access-ready';
   const GRANT_MESSAGE_TYPE = 'legalmonsta:telegram:access-grant';
   const DENIED_MESSAGE_TYPE = 'legalmonsta:telegram:access-denied';
+  const EMBEDDED_RELEASE_PARAM = 'lm-release';
+  const EMBEDDED_RELEASE_PATTERN = /^[a-zA-Z0-9._-]{1,64}$/;
   const ALLOWED_PARENT_ORIGINS = new Set([
     'https://legalmonsta.kz',
     'https://www.legalmonsta.kz',
@@ -70,7 +72,7 @@
         body: JSON.stringify({ ticket: event.data.ticket }),
       });
       if (!response.ok) throw new Error('Access was denied');
-      window.location.replace('/');
+      window.location.replace(buildClientUrl());
     } catch {
       setStatus('Не удалось подтвердить доступ. Обновите страницу кабинета и попробуйте снова.', true);
     }
@@ -78,4 +80,15 @@
 
   requestAccess();
   window.setInterval(requestAccess, 1_500);
+
+  function buildClientUrl() {
+    const url = new URL('/', window.location.origin);
+    const release = new URLSearchParams(window.location.search).get(EMBEDDED_RELEASE_PARAM);
+
+    if (release && EMBEDDED_RELEASE_PATTERN.test(release)) {
+      url.searchParams.set(EMBEDDED_RELEASE_PARAM, release);
+    }
+
+    return `${url.pathname}${url.search}`;
+  }
 })();
