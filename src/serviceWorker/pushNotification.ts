@@ -1,4 +1,8 @@
 import { APP_NAME, DEBUG, DEBUG_MORE } from '../config';
+import {
+  LEGAL_MONSTA_ATTENTION_CLIENT_MESSAGE_TYPE,
+  writeLegalMonstaAttentionState,
+} from '../util/legalMonstaAttention';
 
 declare const self: ServiceWorkerGlobalScope;
 
@@ -114,6 +118,15 @@ async function playNotificationSound(id: string) {
   });
 }
 
+async function publishUnreadAttention() {
+  await writeLegalMonstaAttentionState(true);
+  const clients = await getClients();
+  clients.forEach((client) => client.postMessage({
+    type: LEGAL_MONSTA_ATTENTION_CLIENT_MESSAGE_TYPE,
+    hasUnread: true,
+  }));
+}
+
 function showNotification({
   chatId,
   messageId,
@@ -188,7 +201,10 @@ export function handlePush(e: PushEvent) {
     return;
   }
 
-  e.waitUntil(showNotification(notification));
+  e.waitUntil(Promise.all([
+    showNotification(notification),
+    publishUnreadAttention(),
+  ]));
 }
 
 async function focusChatMessage(client: WindowClient, data: FocusMessageData) {

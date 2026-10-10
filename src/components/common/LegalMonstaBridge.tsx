@@ -3,6 +3,10 @@ import { memo, useEffect } from '../../lib/teact/teact';
 import type { GlobalState } from '../../global/types';
 
 import { ALL_FOLDER_ID } from '../../config';
+import {
+  LEGAL_MONSTA_ATTENTION_CHANNEL_NAME,
+  writeLegalMonstaAttentionState,
+} from '../../util/legalMonstaAttention';
 
 import useSelector from '../../hooks/data/useSelector';
 import { useFolderManagerForUnreadCounters } from '../../hooks/useFolderManager';
@@ -20,6 +24,10 @@ type IncomingCall = 'audio' | 'video' | undefined;
 
 function selectIsAuthorized(global: GlobalState) {
   return global.auth.state === 'authorizationStateReady' || Boolean(global.currentUserId);
+}
+
+function selectHasResolvedAuthorization(global: GlobalState) {
+  return global.auth.state !== undefined;
 }
 
 function selectIncomingCall(global: GlobalState): IncomingCall {
@@ -40,11 +48,25 @@ function resolveParentOrigin() {
 
 function LegalMonstaBridge() {
   const isAuthorized = useSelector(selectIsAuthorized);
+  const hasResolvedAuthorization = useSelector(selectHasResolvedAuthorization);
   const incomingCall = useSelector(selectIncomingCall);
   const unreadCounters = useFolderManagerForUnreadCounters();
-  const hasUnread = Boolean(unreadCounters[ALL_FOLDER_ID]?.notificationsCount);
+  const unreadSummary = unreadCounters[ALL_FOLDER_ID];
+  const hasUnread = Boolean(unreadSummary?.notificationsCount);
 
   useEffect(() => {
+    const hasResolvedAttention = isAuthorized
+      ? unreadSummary !== undefined
+      : hasResolvedAuthorization;
+    if (hasResolvedAttention) {
+      void writeLegalMonstaAttentionState(hasUnread);
+      if ('BroadcastChannel' in window) {
+        const channel = new BroadcastChannel(LEGAL_MONSTA_ATTENTION_CHANNEL_NAME);
+        channel.postMessage({ hasUnread });
+        channel.close();
+      }
+    }
+
     const parentOrigin = resolveParentOrigin();
     if (!parentOrigin) return;
     window.parent.postMessage({
@@ -56,7 +78,7 @@ function LegalMonstaBridge() {
         incomingCall,
       },
     }, parentOrigin);
-  }, [hasUnread, incomingCall, isAuthorized]);
+  }, [hasResolvedAuthorization, hasUnread, incomingCall, isAuthorized, unreadSummary]);
 
   return undefined;
 }
