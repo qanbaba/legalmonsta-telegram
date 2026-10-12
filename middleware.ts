@@ -33,7 +33,11 @@ function isPublicPath(pathname: string) {
 
 function isHtmlNavigation(request: Request, pathname: string) {
   const destination = request.headers.get('sec-fetch-dest');
-  if (destination === 'document' || destination === 'iframe') return true;
+  if (destination) return destination === 'document' || destination === 'iframe';
+
+  const mode = request.headers.get('sec-fetch-mode');
+  if (mode) return mode === 'navigate';
+
   const finalSegment = pathname.split('/').pop() || '';
   if (!finalSegment.includes('.') || finalSegment.endsWith('.html')) return true;
   return Boolean(request.headers.get('accept')?.includes('text/html'));
