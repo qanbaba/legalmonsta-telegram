@@ -93,67 +93,76 @@ export default class PromisedWebSockets {
     });
     this.closed = false;
     this.website = this.getWebSocketLink(ip, port, isTestServer, isPremium);
-    this.client = new WebSocket(this.website, 'binary');
-    this.client.binaryType = 'arraybuffer';
+    const client = new WebSocket(this.website, 'binary');
+    this.client = client;
+    client.binaryType = 'arraybuffer';
 
     return new Promise((resolve, reject) => {
-      if (!this.client) return;
-      let hasResolved = false;
-      let timeout: ReturnType<typeof globalThis.setTimeout> | undefined;
+      let hasSettled = false;
+      let hasDisconnected = false;
 
-      this.client.onopen = () => {
+      const handleOffline = () => {
+        rejectConnection(new Error('WebSocket went offline'));
+        finishDisconnect();
+        client.close();
+      };
+
+      const finishDisconnect = () => {
+        if (hasDisconnected) return;
+        hasDisconnected = true;
+        if (timeout) clearTimeout(timeout);
+        self.removeEventListener('offline', handleOffline);
+        if (client !== this.client) return;
+        this.resolveRead?.(false);
+        this.closed = true;
+        this.disconnectedCallback();
+      };
+
+      const rejectConnection = (error: Error) => {
+        if (hasSettled) return;
+        hasSettled = true;
+        if (timeout) clearTimeout(timeout);
+        reject(error);
+      };
+
+      client.onopen = () => {
+        if (hasSettled || client !== this.client) {
+          client.close();
+          return;
+        }
+        hasSettled = true;
+        if (timeout) clearTimeout(timeout);
         this.receive();
         resolve(this);
-        hasResolved = true;
-        if (timeout) clearTimeout(timeout);
       };
 
-      this.client.onerror = (error) => {
+      client.onerror = () => {
+        // Browser events and close reasons are not safe diagnostic payloads
         // eslint-disable-next-line no-console
-        console.error('WebSocket error', error);
-        reject(error);
-        hasResolved = true;
-        if (timeout) clearTimeout(timeout);
+        console.error('WebSocket connection error');
+        rejectConnection(new Error('WebSocket connection error'));
+        finishDisconnect();
+        client.close();
       };
 
-      this.client.onclose = (event) => {
-        const { code, reason, wasClean } = event;
+      client.onclose = ({ code, wasClean }) => {
+        rejectConnection(new Error(`WebSocket closed before connecting. Code: ${code}`));
         if (code !== 1000) {
           // eslint-disable-next-line no-console
-          console.error(`Socket ${ip} closed. Code: ${code}, reason: ${reason}, was clean: ${wasClean}`);
+          console.error('WebSocket closed', { code, wasClean });
         }
-
-        this.resolveRead?.(false);
-        this.closed = true;
-        if (this.disconnectedCallback) {
-          this.disconnectedCallback();
-        }
-        hasResolved = true;
-        if (timeout) clearTimeout(timeout);
+        finishDisconnect();
       };
 
-      timeout = setTimeout(() => {
-        if (hasResolved) return;
-
-        reject(new Error('WebSocket connection timeout'));
-        this.resolveRead?.(false);
-        this.closed = true;
-        if (this.disconnectedCallback) {
-          this.disconnectedCallback();
-        }
-        this.client?.close();
-        this.timeout *= 2;
-        this.timeout = Math.min(this.timeout, MAX_TIMEOUT);
-        timeout = undefined;
+      const timeout = setTimeout(() => {
+        if (hasSettled) return;
+        rejectConnection(new Error('WebSocket connection timeout'));
+        finishDisconnect();
+        client.close();
+        this.timeout = Math.min(this.timeout * 2, MAX_TIMEOUT);
       }, this.timeout);
 
-      // CONTEST
-      // Seems to not be working, at least in a web worker
-
-      self.addEventListener('offline', () => {
-        this.close();
-        this.resolveRead?.(false);
-      });
+      self.addEventListener('offline', handleOffline);
     });
   }
 

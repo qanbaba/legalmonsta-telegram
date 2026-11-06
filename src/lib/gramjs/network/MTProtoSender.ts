@@ -1746,7 +1746,8 @@ export default class MTProtoSender {
       return;
     }
 
-    const shouldUseFallback = this._shouldUseFallbackOnReconnect;
+    // Keep the active transport; WebSocket recovery has its own retry loop
+    const shouldUseFallback = this._isFallback || this._shouldUseFallbackOnReconnect;
     this._shouldUseFallbackOnReconnect = false;
     const currentConnection = this._connection!;
     const currentFallbackConnection = this._fallbackConnection;
