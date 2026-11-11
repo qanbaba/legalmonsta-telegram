@@ -72,7 +72,7 @@
     "cross-env": "^10.1.0",
     "eslint": "^10.11.0",
     "eslint-import-resolver-typescript": "^4.4.5",
-    "eslint-plugin-import-x": "^4.17.1",
+    "eslint-plugin-import-x": "4.18.0",
     "eslint-plugin-no-null": "^1.0.2",
     "eslint-plugin-react-hooks-static-deps": "github:zubiden/eslint-plugin-react-hooks-static-deps#160ac4ae8cc3819eb7d692ec7157ddf7da699f38",
     "eslint-plugin-simple-import-sort": "^14.0.0",
@@ -146,6 +146,8 @@
     "temml": "^0.13.5"
   },
   "overrides": {
+    "minimatch@>=7 <11": "11.0.5",
+    "glob@>=9 <14.0.2": "14.0.4",
     "serve": {
       "compression": "1.8.2"
     }
